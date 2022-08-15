@@ -485,7 +485,8 @@ function DrawMap (placeholderId, options) {
     const centre = map.getView().getCenter()
     mapInnerContainer.focus()
     if (!state.isDraw) {
-      drawInteraction.startDrawing_(simulateClick(centre)) // Private method
+      const coordinate = simulateClick(centre).coordinate
+      drawInteraction.startDrawing_(coordinate) // Private method
       state.isDraw = true
       updateSketchPoint(centre)
     } else {
@@ -531,7 +532,6 @@ function DrawMap (placeholderId, options) {
     const isWithinX = (firstCoord[0] < centre[0] + tolerance) && (firstCoord[0] > centre[0] - tolerance)
     const isWithinY = (firstCoord[1] < centre[1] + tolerance) && (firstCoord[1] > centre[1] - tolerance)
     if (!state.isSnap && sketchCoords.length > 3 && isWithinX && isWithinY) {
-      console.log('isSnap: true')
       map.getView().setCenter(sketchCoords[0])
       map.removeInteraction(dragPan)
       state.touchDownPixel = pixel
@@ -548,7 +548,6 @@ function DrawMap (placeholderId, options) {
       // console.log('pixel: ' + pixel + ', state.touchDownPixel: ' + state.touchDownPixel)
       // console.log(isWithinX + ' ' + isWithinY)
       if (!(isWithinX && isWithinY)) {
-        console.log('isSnap: false')
         map.addInteraction(dragPan)
         state.isSnap = false
       }
@@ -627,6 +626,7 @@ function DrawMap (placeholderId, options) {
     drawInteraction.finishDrawing()
     map.removeInteraction(modifyInteraction)
     map.removeInteraction(snapInteraction)
+    map.addInteraction(dragPan)
     state.isDraw = false
     state.isModify = false
     state.isStarted = false
@@ -739,7 +739,6 @@ function DrawMap (placeholderId, options) {
     }
     // Reference to start pixel for touch snapping
     if (state.isDraw && maps.interfaceType === 'touch') {
-      console.log('pointerdown')
       state.touchDownPixel = e.pixel
     }
   }
