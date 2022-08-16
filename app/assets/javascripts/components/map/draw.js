@@ -560,7 +560,7 @@ function DrawMap (placeholderId, options) {
       const currentOffsetY = state.touchDownPixel[1] - pixel[1]
       const isOutside = (Math.abs(currentOffsetX) > tolerance) || (Math.abs(currentOffsetY) > tolerance)
       if (isDebug) {
-        debiug.innerText(`${isOutside}, ${currentOffsetX}, ${currentOffsetY}`)
+        debug.innerText(`${isOutside}, ${currentOffsetX}, ${currentOffsetY}`)
       }
       // console.log(isWithin, tolerance, pixel[0] - state.touchDownPixel[0], pixel[1] - state.touchDownPixel[1])
       // const isWithinX = (startOffsetX < currentOffsetX + tolerance) && (startOffsetX > currentOffsetX - tolerance)
