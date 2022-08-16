@@ -10,7 +10,7 @@ import { defaults as defaultInteractions, Modify, Snap, Draw, DoubleClickZoom, D
 import { Style, Icon, Fill, Stroke } from 'ol/style'
 import { mouseOnly } from 'ol/events/condition'
 
-const { forEach } = window.flood.utils
+const { forEach, hasParameterName } = window.flood.utils
 const maps = window.flood.maps
 
 function DrawMap (placeholderId, options) {
@@ -46,6 +46,16 @@ function DrawMap (placeholderId, options) {
   buttons.appendChild(buttonsContainer)
   mapContainer.appendChild(buttons)
   placeholder.appendChild(mapContainer)
+
+  // Debug
+  const debug = document.createElement('div')
+  debug.id = 'debug'
+  debug.innerText = 'debug'
+  debug.classList.add('defra-map-draw__debug')
+  const isDebug = hasParameterName('debug')
+  if (isDebug) {
+    mapContainer.appendChild(debug)
+  }
 
   // State object
   const state = {
@@ -524,32 +534,49 @@ function DrawMap (placeholderId, options) {
   const snapMap = (pixel) => {
     const tolerance = 9
     const sketchCoords = drawInteraction.sketchFeature_.getGeometry().getCoordinates()[0]
-    let firstCoord = map.getPixelFromCoordinate(sketchCoords[0])
-    let centre = map.getPixelFromCoordinate(map.getView().getCenter())
-    firstCoord = [Math.round(firstCoord[0]), Math.round(firstCoord[1])]
-    centre = [Math.round(centre[0]), Math.round(centre[1])]
+    const firstCoord = map.getPixelFromCoordinate(sketchCoords[0])
+    // firstCoord = [Math.round(firstCoord[0]), Math.round(firstCoord[1])]
+    const centre = map.getPixelFromCoordinate(map.getView().getCenter())
+    // centre = [Math.round(centre[0]), Math.round(centre[1])]
+    const offsetX = firstCoord[0] - centre[0]
+    const offsetY = firstCoord[1] - centre[1]
+    const isWithin = Math.abs(offsetX) <= tolerance && Math.abs(offsetY) <= tolerance
     // Snap in
-    const isWithinX = (firstCoord[0] < centre[0] + tolerance) && (firstCoord[0] > centre[0] - tolerance)
-    const isWithinY = (firstCoord[1] < centre[1] + tolerance) && (firstCoord[1] > centre[1] - tolerance)
-    if (!state.isSnap && sketchCoords.length > 3 && isWithinX && isWithinY) {
+    // const isWithinY = (firstCoord[1] < centre[1] + tolerance) && (firstCoord[1] > centre[1] - tolerance)
+    if (!state.isSnap && sketchCoords.length > 3 && isWithin) {
       map.getView().setCenter(sketchCoords[0])
       map.removeInteraction(dragPan)
       state.touchDownPixel = pixel
+      // console.log('snapIn: ', state.isSnap, state.touchDownPixel)
       state.isSnap = true
     }
     // Snap out
     if (state.isSnap) {
-      const startOffsetX = centre[0] - state.touchDownPixel[0]
-      const startOffsetY = centre[1] - state.touchDownPixel[1]
-      const currentOffsetX = centre[0] - pixel[0]
-      const currentOffsetY = centre[1] - pixel[1]
-      const isWithinX = (startOffsetX < currentOffsetX + tolerance) && (startOffsetX > currentOffsetX - tolerance)
-      const isWithinY = (startOffsetY < currentOffsetY + tolerance) && (startOffsetY > currentOffsetY - tolerance)
+      // const startOffsetX = centre[0] - state.touchDownPixel[0]
+      // const startOffsetY = centre[1] - state.touchDownPixel[1]
+      // const currentOffsetX = centre[0] - pixel[0]
+      // const currentOffsetY = centre[1] - pixel[1]
+      const currentOffsetX = state.touchDownPixel[0] - pixel[0]
+      const currentOffsetY = state.touchDownPixel[1] - pixel[1]
+      const isOutside = (Math.abs(currentOffsetX) > tolerance) || (Math.abs(currentOffsetY) > tolerance)
+      if (isDebug) {
+        debiug.innerText(`${isOutside}, ${currentOffsetX}, ${currentOffsetY}`)
+      }
+      // console.log(isWithin, tolerance, pixel[0] - state.touchDownPixel[0], pixel[1] - state.touchDownPixel[1])
+      // const isWithinX = (startOffsetX < currentOffsetX + tolerance) && (startOffsetX > currentOffsetX - tolerance)
+      // const isWithinY = (startOffsetY < currentOffsetY + tolerance) && (startOffsetY > currentOffsetY - tolerance)
+      // const isWithinX = (currentOffsetX + tolerance) && (firstCoord[0] > currentOffsetX - tolerance)
+      // const isWithinY = (firstCoord[1] < currentOffsetY + tolerance) && (firstCoord[1] > currentOffsetY - tolerance)
       // console.log('pixel: ' + pixel + ', state.touchDownPixel: ' + state.touchDownPixel)
       // console.log(isWithinX + ' ' + isWithinY)
-      if (!(isWithinX && isWithinY)) {
+      if (isOutside) {
+        // console.log(centre)
+        // console.log([centre[0] + currentOffsetX, centre[1] + currentOffsetY])
+        // const coordinates = map.getCoordinateFromPixel([centre[0] + currentOffsetX, centre[1] + currentOffsetY])
+        // map.getView().setCenter(map.getView().getCenter())
         map.addInteraction(dragPan)
         state.isSnap = false
+        console.log('outside')
       }
     }
   }
@@ -757,6 +784,7 @@ function DrawMap (placeholderId, options) {
 
   // Map pan and zoom (all interfaces)
   const pointerAndMapMove = (e) => {
+    const centre = map.getView().getCenter()
     if (maps.interfaceType === 'mouse') {
       // if (!state.isEnableModify) {
       //   map.addInteraction(modifyInteraction)
@@ -776,7 +804,6 @@ function DrawMap (placeholderId, options) {
         state.isEnableModify = true
       }
       keyboardLayer.setVisible(false)
-      const centre = map.getView().getCenter()
       if (drawInteraction) {
         updateSketchPoint(centre)
       }
@@ -792,7 +819,6 @@ function DrawMap (placeholderId, options) {
       }
     } else if (maps.interfaceType === 'keyboard') {
       pointLayer.setVisible(false)
-      let centre = map.getView().getCenter()
       if (drawInteraction) {
         updateSketchPoint(centre)
       }

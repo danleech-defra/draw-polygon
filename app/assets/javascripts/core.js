@@ -43,8 +43,12 @@ window.flood = {
       return uri + hash
     },
     getParameterByName: (name) => {
-      const v = window.location.search.match(new RegExp('(?:[?&]' + name + '=)([^&]+)'))
+      const v = window.location.search.match(new RegExp(`(?:[?&]${name}=)([^&]+)`))
       return v ? v[1] : null
+    },
+    hasParameterName: (name) => {
+      const v = window.location.search.match(new RegExp(`(?:[?&]${name})`))
+      return !!v
     },
     addBrowserBackButton: () => {
       const container = document.getElementById('browserBackContainer')
