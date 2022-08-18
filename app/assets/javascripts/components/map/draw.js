@@ -47,16 +47,6 @@ function DrawMap (placeholderId, options) {
   mapContainer.appendChild(buttons)
   placeholder.appendChild(mapContainer)
 
-  // Debug
-  const debug = document.createElement('div')
-  debug.id = 'debug'
-  debug.innerText = 'debug'
-  debug.classList.add('defra-map-draw__debug')
-  const isDebug = hasParameterName('debug')
-  if (isDebug) {
-    mapContainer.appendChild(debug)
-  }
-
   // State object
   const state = {
     isStarted: false,
@@ -469,12 +459,12 @@ function DrawMap (placeholderId, options) {
     keyboardLayer.setVisible(true)
   }
 
-  const simulateClick = (coordinate) => {
+  const simulatePointerEvent = (type, coordinate) => {
     const pixel = map.getPixelFromCoordinate(coordinate)
     const pixelX = Math.round(pixel[0] + viewport.getBoundingClientRect().left)
     const pixelY = Math.round(pixel[1] + viewport.getBoundingClientRect().top)
-    const mouseEvent = new window.MouseEvent('click', { view: window, clientX: pixelX, clientY: pixelY, bubbles: true })
-    const event = new MapBrowserEvent('click', map, mouseEvent)
+    const mouseEvent = new window.MouseEvent(type, { view: window, clientX: pixelX, clientY: pixelY, bubbles: true })
+    const event = new MapBrowserEvent(type, map, mouseEvent)
     return event
   }
 
@@ -484,6 +474,11 @@ function DrawMap (placeholderId, options) {
     deletePointButton.disabled = !isDelete
     newPointButton.disabled = !isInsert
   }
+
+  // const toggleDeletePointButton = () => {
+  //   const coordinates = drawInteraction.sketchFeature_.getGeometry().getCoordinates()[0]
+  //   deletePointButton.disabled = coordinates.length > 3
+  // }
 
   const enableModifyPolygon = () => {
     map.addInteraction(modifyInteraction)
@@ -495,7 +490,7 @@ function DrawMap (placeholderId, options) {
     const centre = map.getView().getCenter()
     mapInnerContainer.focus()
     if (!state.isDraw) {
-      const coordinate = simulateClick(centre).coordinate
+      const coordinate = simulatePointerEvent('click', centre).coordinate
       drawInteraction.startDrawing_(coordinate) // Private method
       state.isDraw = true
       updateSketchPoint(centre)
@@ -517,7 +512,7 @@ function DrawMap (placeholderId, options) {
     const coordinate = pointFeature.getGeometry().getCoordinates()
     state.isEnableModify = true
     state.isEnableInsert = true
-    modifyInteraction.handleDownEvent(simulateClick(coordinate))
+    modifyInteraction.handleDownEvent(simulatePointerEvent('click', coordinate))
     const vertexFeature = modifyInteraction.vertexFeature_
     updateSelectedIndexAndOffset(vertexFeature)
     vertexFeature.set('type', 'point')
@@ -531,54 +526,34 @@ function DrawMap (placeholderId, options) {
     mapInnerContainer.focus()
   }
 
-  const snapMap = (pixel) => {
+  const snap = (pixel) => {
     const tolerance = 9
-    const sketchCoords = drawInteraction.sketchFeature_.getGeometry().getCoordinates()[0]
-    const firstCoord = map.getPixelFromCoordinate(sketchCoords[0])
-    // firstCoord = [Math.round(firstCoord[0]), Math.round(firstCoord[1])]
     const centre = map.getPixelFromCoordinate(map.getView().getCenter())
-    // centre = [Math.round(centre[0]), Math.round(centre[1])]
-    const offsetX = firstCoord[0] - centre[0]
-    const offsetY = firstCoord[1] - centre[1]
-    const isWithin = Math.abs(offsetX) <= tolerance && Math.abs(offsetY) <= tolerance
+    const coordinates = drawInteraction.sketchFeature_.getGeometry().getCoordinates()[0]
+    const firstPixel = map.getPixelFromCoordinate(coordinates[0])
+    const offset = [firstPixel[0] - centre[0], firstPixel[1] - centre[1]]
+    const isWithin = Math.abs(offset[0]) <= tolerance && Math.abs(offset[1]) <= tolerance
     // Snap in
-    // const isWithinY = (firstCoord[1] < centre[1] + tolerance) && (firstCoord[1] > centre[1] - tolerance)
-    if (!state.isSnap && sketchCoords.length > 3 && isWithin) {
-      map.getView().setCenter(sketchCoords[0])
-      map.removeInteraction(dragPan)
-      state.touchDownPixel = pixel
-      // console.log('snapIn: ', state.isSnap, state.touchDownPixel)
+    if (!state.isSnap && coordinates.length > 3 && isWithin) {
+      map.getView().setCenter(coordinates[0])
       state.isSnap = true
+      state.touchDownPixel = pixel
     }
     // Snap out
     if (state.isSnap) {
-      // const startOffsetX = centre[0] - state.touchDownPixel[0]
-      // const startOffsetY = centre[1] - state.touchDownPixel[1]
-      // const currentOffsetX = centre[0] - pixel[0]
-      // const currentOffsetY = centre[1] - pixel[1]
-      const currentOffsetX = state.touchDownPixel[0] - pixel[0]
-      const currentOffsetY = state.touchDownPixel[1] - pixel[1]
-      const isOutside = (Math.abs(currentOffsetX) > tolerance) || (Math.abs(currentOffsetY) > tolerance)
-      if (isDebug) {
-        debug.innerText(`${isOutside}, ${currentOffsetX}, ${currentOffsetY}`)
-      }
-      // console.log(isWithin, tolerance, pixel[0] - state.touchDownPixel[0], pixel[1] - state.touchDownPixel[1])
-      // const isWithinX = (startOffsetX < currentOffsetX + tolerance) && (startOffsetX > currentOffsetX - tolerance)
-      // const isWithinY = (startOffsetY < currentOffsetY + tolerance) && (startOffsetY > currentOffsetY - tolerance)
-      // const isWithinX = (currentOffsetX + tolerance) && (firstCoord[0] > currentOffsetX - tolerance)
-      // const isWithinY = (firstCoord[1] < currentOffsetY + tolerance) && (firstCoord[1] > currentOffsetY - tolerance)
-      // console.log('pixel: ' + pixel + ', state.touchDownPixel: ' + state.touchDownPixel)
-      // console.log(isWithinX + ' ' + isWithinY)
+      // const coordinate = [Math.round(coordinates[0][0]), Math.round(coordinates[0][1])]
+      // map.getView().setCenter(coordinate)
+      // console.log(`Set center: ${coordinate}`)
+      const movement = [state.touchDownPixel[0] - pixel[0], state.touchDownPixel[1] - pixel[1]]
+      const isOutside = (Math.abs(movement[0]) > tolerance) || (Math.abs(movement[1]) > tolerance)
       if (isOutside) {
-        // console.log(centre)
-        // console.log([centre[0] + currentOffsetX, centre[1] + currentOffsetY])
-        // const coordinates = map.getCoordinateFromPixel([centre[0] + currentOffsetX, centre[1] + currentOffsetY])
-        // map.getView().setCenter(map.getView().getCenter())
-        map.addInteraction(dragPan)
+        const outside = map.getCoordinateFromPixel([centre[0] + movement[0], centre[1] + movement[1]])
+        map.getView().setCenter(outside)
         state.isSnap = false
-        console.log('outside')
       }
     }
+    // Toogle add point button
+    newPointButton.disabled = state.isSnap
   }
 
   //
@@ -657,6 +632,7 @@ function DrawMap (placeholderId, options) {
     state.isDraw = false
     state.isModify = false
     state.isStarted = false
+    state.isSnap = false
     // Reset
     pointLayer.setVisible(false)
     keyboardLayer.setVisible(false)
@@ -746,6 +722,8 @@ function DrawMap (placeholderId, options) {
       }
       // Show edit point button
       toggleEditButtons(vertexFeature)
+      // Toggle delete point button
+      // toggleDeletePointButton()
     } else if (maps.interfaceType !== 'keyboard' && state.isStarted && !state.isDraw) {
       enableModifyPolygon()
     }
@@ -765,9 +743,7 @@ function DrawMap (placeholderId, options) {
       }
     }
     // Reference to start pixel for touch snapping
-    if (state.isDraw && maps.interfaceType === 'touch') {
-      state.touchDownPixel = e.pixel
-    }
+    state.touchDownPixel = e.pixel
   }
   map.on('pointerdown', pointerDown)
 
@@ -785,7 +761,7 @@ function DrawMap (placeholderId, options) {
   // Map pan and zoom (all interfaces)
   const pointerAndMapMove = (e) => {
     const centre = map.getView().getCenter()
-    if (maps.interfaceType === 'mouse') {
+      if (maps.interfaceType === 'mouse') {
       // if (!state.isEnableModify) {
       //   map.addInteraction(modifyInteraction)
       //   state.isEnableModify = true
@@ -810,12 +786,16 @@ function DrawMap (placeholderId, options) {
       if (state.isDraw) {
         updateSketchFeatures(centre)
         if (e.type === 'pointermove') {
-          snapMap(e.pixel)
+          snap(e.pixel)
         }
       }
       if (state.isModify) {
         updatePolygon()
         pointLayer.setVisible(pointFeature.get('type') === 'point')
+      }
+      if (state.isSnap) {
+        const coordinate = drawInteraction.sketchFeature_.getGeometry().getCoordinates()[0][0]
+        map.getView().setCenter(coordinate)
       }
     } else if (maps.interfaceType === 'keyboard') {
       pointLayer.setVisible(false)
@@ -840,7 +820,7 @@ function DrawMap (placeholderId, options) {
         } else {
           state.isEnableModify = true
           map.addInteraction(modifyInteraction)
-          modifyInteraction.handleDownEvent(simulateClick(centre))
+          modifyInteraction.handleDownEvent(simulatePointerEvent('click', centre))
           state.isEnableModify = false
           if (vertexFeature) {
             vertexFeature.set('isSelected', false)
@@ -885,7 +865,7 @@ function DrawMap (placeholderId, options) {
   const keyup = (e) => {
     if (!state.isKeyboardButtonClick && e.target === mapInnerContainer && (e.key === 'Enter' || e.key === ' ')) {
       const centre = map.getView().getCenter()
-      map.dispatchEvent(simulateClick(centre))
+      map.dispatchEvent(simulatePointerEvent('click', centre))
     }
     state.isKeyboardButtonClick = false
   }
