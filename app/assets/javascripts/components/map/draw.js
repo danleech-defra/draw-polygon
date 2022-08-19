@@ -469,16 +469,12 @@ function DrawMap (placeholderId, options) {
   }
 
   const toggleEditButtons = (vertexFeature) => {
+    const coordinates = vectorSource.getFeatures()[0].getGeometry().getCoordinates()[0]
     const isDelete = vertexFeature && vertexFeature.get('type') === 'point' && vertexFeature.get('isSelected')
     const isInsert = vertexFeature && vertexFeature.get('type') !== 'point' && vertexFeature.get('isSelected')
-    deletePointButton.disabled = !isDelete
+    deletePointButton.disabled = !isDelete || coordinates.length <= 4
     newPointButton.disabled = !isInsert
   }
-
-  // const toggleDeletePointButton = () => {
-  //   const coordinates = drawInteraction.sketchFeature_.getGeometry().getCoordinates()[0]
-  //   deletePointButton.disabled = coordinates.length > 3
-  // }
 
   const enableModifyPolygon = () => {
     map.addInteraction(modifyInteraction)
@@ -526,7 +522,7 @@ function DrawMap (placeholderId, options) {
     mapInnerContainer.focus()
   }
 
-  const snap = (pixel) => {
+  const snapToStart = (pixel) => {
     const tolerance = 9
     const centre = map.getPixelFromCoordinate(map.getView().getCenter())
     const coordinates = drawInteraction.sketchFeature_.getGeometry().getCoordinates()[0]
@@ -541,9 +537,6 @@ function DrawMap (placeholderId, options) {
     }
     // Snap out
     if (state.isSnap) {
-      // const coordinate = [Math.round(coordinates[0][0]), Math.round(coordinates[0][1])]
-      // map.getView().setCenter(coordinate)
-      // console.log(`Set center: ${coordinate}`)
       const movement = [state.touchDownPixel[0] - pixel[0], state.touchDownPixel[1] - pixel[1]]
       const isOutside = (Math.abs(movement[0]) > tolerance) || (Math.abs(movement[1]) > tolerance)
       if (isOutside) {
@@ -722,8 +715,6 @@ function DrawMap (placeholderId, options) {
       }
       // Show edit point button
       toggleEditButtons(vertexFeature)
-      // Toggle delete point button
-      // toggleDeletePointButton()
     } else if (maps.interfaceType !== 'keyboard' && state.isStarted && !state.isDraw) {
       enableModifyPolygon()
     }
@@ -786,7 +777,7 @@ function DrawMap (placeholderId, options) {
       if (state.isDraw) {
         updateSketchFeatures(centre)
         if (e.type === 'pointermove') {
-          snap(e.pixel)
+          snapToStart(e.pixel)
         }
       }
       if (state.isModify) {
