@@ -397,18 +397,18 @@ function DrawMap (placeholderId, options) {
     // Update the sketch feature by drawing a line to the coordinate
     const sketchFeature = drawInteraction.sketchFeature_ // Private method
     const sketchLine = drawInteraction.sketchLine_ // Private method
-    let fCoordinates = sketchFeature.getGeometry().getCoordinates()[0]
-    if (fCoordinates.length >= 3) {
+    let sCoordinates = sketchFeature.getGeometry().getCoordinates()[0]
+    if (sCoordinates.length >= 3) {
       // Polygon: Update second to last coordinate
-      fCoordinates[fCoordinates.length - 2][0] = coordinate[0]
-      fCoordinates[fCoordinates.length - 2][1] = coordinate[1]
+      sCoordinates[sCoordinates.length - 2][0] = coordinate[0]
+      sCoordinates[sCoordinates.length - 2][1] = coordinate[1]
       // Clear sketch line
       sketchLine.getGeometry().setCoordinates([])
     } else {
       // Polygon: Insert coordinate before last
-      fCoordinates.splice(1, 0, [coordinate[0], coordinate[1]])
+      sCoordinates.splice(1, 0, [coordinate[0], coordinate[1]])
     }
-    sketchFeature.getGeometry().setCoordinates([fCoordinates])
+    sketchFeature.getGeometry().setCoordinates([sCoordinates])
   }
 
   const setVertexType = (vertexFeature) => {
@@ -496,8 +496,8 @@ function DrawMap (placeholderId, options) {
       // Enable finish shape button if sketch feature has minimum points
       if (maps.interfaceType === 'touch' || maps.interfaceType === 'keyboard') {
         const sketchFeature = drawInteraction.sketchFeature_ // Private method
-        let fCoordinates = sketchFeature.getGeometry().getCoordinates()[0]
-        if (fCoordinates.length > 4) {
+        let sCoordinates = sketchFeature.getGeometry().getCoordinates()[0]
+        if (sCoordinates.length > 4) {
           doneShapeButton.removeAttribute('disabled')
         }
       }
@@ -766,11 +766,11 @@ function DrawMap (placeholderId, options) {
       }
       keyboardLayer.setVisible(false)
     } else if (maps.interfaceType === 'touch') {
+      keyboardLayer.setVisible(false)
       if (!state.isEnableModify) {
         map.addInteraction(modifyInteraction)
         state.isEnableModify = true
       }
-      keyboardLayer.setVisible(false)
       if (drawInteraction) {
         updateSketchPoint(centre)
       }
