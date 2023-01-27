@@ -1,6 +1,6 @@
-# Documentation
+## Prototype draw a shape on a map
 
-[Documentation and examples](https://govuk-prototype-kit.herokuapp.com/docs)
+For research and testing only
 
-Documentation is also available when running the app locally at http:localhost:3000/docs
+https://map-shape.herokuapp.com
 
