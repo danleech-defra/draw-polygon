@@ -1,4 +1,4 @@
-## Prototype draw a shape on a map
+# Draw a shape on a map prototype
 
 For research and testing only
 
